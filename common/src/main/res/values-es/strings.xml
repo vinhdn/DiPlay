@@ -516,7 +516,15 @@
     <string name="center_map_usage_missing">Acceso a datos de uso: no permitido, así que la tarjeta aparece sobre todas las aplicaciones. Por ADB: adb shell appops set %1$s GET_USAGE_STATS allow</string>
     <string name="center_map_no_permission_screen">Esta unidad principal no tiene pantalla de ajustes para este permiso. Permítelo por ADB.</string>
     <string name="launcher_map_sharing">Compartir el mapa en vivo con otros launchers</string>
-    <string name="launcher_map_sharing_description">Los launchers compatibles con DiPlay pueden mostrar el mapa en vivo del panel de instrumentos en su propia pantalla de inicio. Desactivado por defecto, porque entonces cualquier aplicación de la unidad principal podría pedir el mapa. Consulta docs/LAUNCHER_INTEGRATION.md.</string>
+    <string name="launcher_map_sharing_description">Los launchers compatibles con DiPlay pueden mostrar el mapa en vivo del panel de instrumentos en su propia pantalla de inicio. Activado por defecto. Mientras esté activado, cualquier aplicación de la unidad principal puede pedir el mapa; desactívalo si no usas un launcher ni la app Taplo. Consulta docs/LAUNCHER_INTEGRATION.md.</string>
+    <string name="second_display_map">Mostrar el mapa en una segunda pantalla</string>
+    <string name="second_display_map_description">Si no se encuentra la pantalla del cuadro de instrumentos BYD, muestra el mapa del panel de CarPlay a pantalla completa en otra pantalla Android (HDMI, USB-C, pantalla del pasajero o del cuadro). Al aplicar se reconecta CarPlay.</string>
+    <string name="second_display_target">Segunda pantalla</string>
+    <string name="second_display_auto">Automática (primera pantalla de presentación)</string>
+    <string name="second_display_missing">Pantalla %1$d (no conectada)</string>
+    <string name="second_display_current">El mapa va a la pantalla %1$s.</string>
+    <string name="second_display_none">No hay una segunda pantalla conectada. El mapa usa la transmisión virtual hasta que aparezca una.</string>
+    <string name="second_display_byd_wins">Se encontró una pantalla de cuadro BYD; se usa en lugar de la segunda pantalla.</string>
     <string name="turn_card_overlay_size">Tamaño de la tarjeta personalizada</string>
     <string name="turn_card_overlay_opacity">Opacidad de la tarjeta personalizada</string>
     <string name="turn_card_overlay_opacity_option">%1$d %%</string>

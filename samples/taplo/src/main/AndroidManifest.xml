@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Defined by DiPlay (signature level): release, debug (.hudtest) and automotive builds. -->
+    <uses-permission android:name="com.shihab.diplay.permission.TAPLO_LINK" />
+    <uses-permission android:name="com.shihab.diplay.hudtest.permission.TAPLO_LINK" />
+    <uses-permission android:name="com.shilapi.xcertplay.permission.TAPLO_LINK" />
+
+    <!-- Android 11+ hides other packages unless asked for; DiPlay is found by its link action. -->
+    <queries>
+        <intent>
+            <action android:name="com.shihab.diplay.action.TAPLO_LINK" />
+        </intent>
+    </queries>
+
+    <application
+        android:allowBackup="false"
+        android:label="DiPlay Taplo"
+        android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen">
+
+        <!-- Embedded by the launcher / cluster service (ActivityView or a display launch), so it
+             must be resizeable and survive its slot changing size without being recreated. -->
+        <activity
+            android:name=".TaploActivity"
+            android:exported="true"
+            android:resizeableActivity="true"
+            android:allowEmbedded="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density|uiMode|keyboardHidden"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

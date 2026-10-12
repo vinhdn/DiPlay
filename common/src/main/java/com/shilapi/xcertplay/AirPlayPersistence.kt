@@ -69,6 +69,14 @@ object AirPlayPersistence {
     private const val KEY_CENTER_MAP_OVERLAY = "center_map_overlay"
     private const val KEY_CENTER_MAP_AUTO_HIDE = "center_map_auto_hide"
     private const val KEY_LAUNCHER_MAP_SHARING = "launcher_map_sharing"
+    private const val KEY_TAPLO_WIDTH = "taplo_app_width"
+    private const val KEY_TAPLO_HEIGHT = "taplo_app_height"
+    private const val KEY_TAPLO_OBSCURED_TOP = "taplo_app_obscured_top"
+    private const val KEY_TAPLO_OBSCURED_BOTTOM = "taplo_app_obscured_bottom"
+    private const val KEY_TAPLO_OBSCURED_LEFT = "taplo_app_obscured_left"
+    private const val KEY_TAPLO_OBSCURED_RIGHT = "taplo_app_obscured_right"
+    private const val KEY_SECOND_DISPLAY_ENABLED = "second_display_enabled"
+    private const val KEY_SECOND_DISPLAY_ID = "second_display_id"
     private const val KEY_CLUSTER_MAP_SCALE = "cluster_map_scale_percent"
     private const val KEY_CLUSTER_CONTENT = "cluster_content"
     private const val KEY_CLUSTER_MARKER_X = "cluster_marker_horizontal_step"
@@ -550,7 +558,7 @@ object AirPlayPersistence {
     }
 
     fun loadClusterMapEnabled(context: Context): Boolean =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_CLUSTER_MAP, false)
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_CLUSTER_MAP, true)
 
     fun loadAdbClusterEnabled(context: Context): Boolean = loadClusterMapEnabled(context) &&
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_ADB_CLUSTER_ACTIVITY, false)
@@ -580,7 +588,7 @@ object AirPlayPersistence {
 
     /** Other launchers may show the live dashboard map in their own screen (MapEmbedService). */
     fun loadLauncherMapSharing(context: Context): Boolean =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_LAUNCHER_MAP_SHARING, false)
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_LAUNCHER_MAP_SHARING, true)
 
     fun saveLauncherMapSharing(context: Context, enabled: Boolean) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_LAUNCHER_MAP_SHARING, enabled).apply()
@@ -594,6 +602,59 @@ object AirPlayPersistence {
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
         return { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    /**
+     * The size the taplo companion app last reported for its cluster view (TaploLinkService), or
+     * null before it has ever attached. The virtual dashboard stream is requested at this size.
+     */
+    fun loadTaploAppSize(context: Context): Pair<Int, Int>? {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val width = prefs.getInt(KEY_TAPLO_WIDTH, 0)
+        val height = prefs.getInt(KEY_TAPLO_HEIGHT, 0)
+        return if (width > 0 && height > 0) width to height else null
+    }
+
+    fun saveTaploAppSize(context: Context, width: Int, height: Int) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putInt(KEY_TAPLO_WIDTH, width).putInt(KEY_TAPLO_HEIGHT, height).apply()
+    }
+
+    /**
+     * The part of the taplo view the host app covers, in percent per edge, as the taplo app last
+     * declared it; null before it ever has. The map stream's safe area excludes it.
+     */
+    fun loadTaploAppObscured(context: Context): com.shilapi.xcertplay.airplay.AirPlayInsets? {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        if (!prefs.contains(KEY_TAPLO_OBSCURED_TOP)) return null
+        return com.shilapi.xcertplay.airplay.AirPlayInsets(
+            top = prefs.getInt(KEY_TAPLO_OBSCURED_TOP, 0),
+            bottom = prefs.getInt(KEY_TAPLO_OBSCURED_BOTTOM, 0),
+            left = prefs.getInt(KEY_TAPLO_OBSCURED_LEFT, 0),
+            right = prefs.getInt(KEY_TAPLO_OBSCURED_RIGHT, 0),
+        )
+    }
+
+    fun saveTaploAppObscured(context: Context, percent: com.shilapi.xcertplay.airplay.AirPlayInsets) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putInt(KEY_TAPLO_OBSCURED_TOP, percent.top).putInt(KEY_TAPLO_OBSCURED_BOTTOM, percent.bottom)
+            .putInt(KEY_TAPLO_OBSCURED_LEFT, percent.left).putInt(KEY_TAPLO_OBSCURED_RIGHT, percent.right).apply()
+    }
+
+    /** Show the dashboard map on an ordinary second Android display when no BYD cluster display exists. */
+    fun loadSecondDisplayEnabled(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_SECOND_DISPLAY_ENABLED, true)
+
+    fun saveSecondDisplayEnabled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_SECOND_DISPLAY_ENABLED, enabled).apply()
+    }
+
+    /** The chosen second display's id, or [SecondDisplayPolicy.AUTO] for the first presentation display. */
+    fun loadSecondDisplayId(context: Context): Int =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(KEY_SECOND_DISPLAY_ID, SecondDisplayPolicy.AUTO)
+
+    fun saveSecondDisplayId(context: Context, displayId: Int) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putInt(KEY_SECOND_DISPLAY_ID, displayId).apply()
     }
 
     fun saveCenterMapOverlay(context: Context, enabled: Boolean) {

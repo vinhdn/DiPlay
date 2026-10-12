@@ -13,6 +13,9 @@ import java.util.concurrent.CopyOnWriteArraySet
 internal object MapMirrors {
     const val CARD = "card"
 
+    /** The taplo companion app's surface, embedded on the instrument cluster ([TaploLinkService]). */
+    const val TAPLO = "taplo"
+
     /** The physical dashboard stream's shape (1920x720, sent scaled to 1600x600 by default). */
     const val PHYSICAL_STREAM_ASPECT = 8.0 / 3
 
@@ -64,8 +67,11 @@ internal object MapMirrors {
 
     val any: Boolean get() = surfaces.isNotEmpty()
 
+    fun has(key: String): Boolean = key in surfaces
+
     /** Whether a launcher shows the map (see [MapEmbedService]), so the centre card is not needed. */
-    val launcherShowsMap: Boolean get() = surfaces.keys.any { it != CARD }
+    // The taplo app sits on the cluster, not the centre screen, so it never replaces the centre card.
+    val launcherShowsMap: Boolean get() = surfaces.keys.any { it != CARD && it != TAPLO }
 
     fun setStreamActive(active: Boolean) {
         main.post {

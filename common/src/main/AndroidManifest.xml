@@ -22,6 +22,12 @@
             <category android:name="android.intent.category.HOME" />
         </intent>
     </queries>
+    <!-- Lets the taplo companion app (samples/taplo) hand DiPlay its cluster view. Signature, so only
+         an app signed with DiPlay's key can bind to TaploLinkService. -->
+    <permission
+        android:name="${applicationId}.permission.TAPLO_LINK"
+        android:protectionLevel="signature" />
+
     <application>
         <provider
             android:name="com.shilapi.xcertplay.DiagnosticReportProvider"
@@ -115,6 +121,16 @@
             tools:ignore="ExportedService">
             <intent-filter>
                 <action android:name="com.shihab.diplay.action.EMBED_MAP" />
+            </intent-filter>
+        </service>
+
+        <!-- The live dashboard map for the taplo companion app on the instrument cluster. -->
+        <service
+            android:name="com.shilapi.xcertplay.TaploLinkService"
+            android:exported="true"
+            android:permission="${applicationId}.permission.TAPLO_LINK">
+            <intent-filter>
+                <action android:name="com.shihab.diplay.action.TAPLO_LINK" />
             </intent-filter>
         </service>
 

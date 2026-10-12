@@ -698,6 +698,8 @@ class DiPlayActivity : ComponentActivity() {
             val diLink4 = adbCluster || (clusterDisplay != null && clusterSize != null &&
                 DiLink4ClusterDisplay.matches(clusterDisplay.name, clusterSize.x, clusterSize.y))
             val clusterMapEnabled = AirPlayPersistence.loadClusterMapEnabled(this)
+            // An ordinary second Android display stands in only when no BYD cluster display is found.
+            val secondDisplay = if (clusterDisplay == null && !adbCluster) SecondDisplay.choose(this) else null
             toggle(card, getString(R.string.carplay_map_on_instrument_cluster_experimental),
                 if (clusterDisplay != null || adbCluster) getString(R.string.shows_the_iphone_s_cluster_map_on_the_instrument_cluster_c)
                 else getString(R.string.shows_the_iphone_s_cluster_map_virtual_stream_description),
@@ -707,6 +709,7 @@ class DiPlayActivity : ComponentActivity() {
                 reconnectForClusterMap()
             }
             if (clusterMapEnabled) {
+                secondDisplayControls(card, clusterDisplay != null || adbCluster, secondDisplay)
                 toggle(card, getString(R.string.center_map_card),
                     if (clusterDisplay != null || adbCluster) getString(R.string.center_map_card_description)
                     else getString(R.string.center_map_card_virtual_description),
@@ -740,8 +743,8 @@ class DiPlayActivity : ComponentActivity() {
                         card.addView(button(getString(R.string.btn_auto_apply_permissions), false) { autoApplyPermissions() }, matchButton(8, 54))
                     }
                 }
-                if (clusterDisplay != null || adbCluster) {
-                    if (DiLink51ClusterLayout.supported() && !adbCluster) {
+                if (clusterDisplay != null || adbCluster || secondDisplay != null) {
+                    if (DiLink51ClusterLayout.supported() && !adbCluster && clusterDisplay != null) {
                         val automatic = DiLink51ClusterLayout.automatic(this)
                         toggle(card, getString(R.string.follow_instrument_theme_and_map_card),
                             getString(R.string.show_the_side_map_only_when_its_card_is_open_and_switch_to), automatic) {
@@ -2434,6 +2437,37 @@ class DiPlayActivity : ComponentActivity() {
         ClusterActivityOutput.beginSafeAreaPreview(previewOwner, initial, this)
     }
 
+    /** Open Headunit-style second screen: the map on an ordinary Android display, chosen automatically or by id. */
+    private fun secondDisplayControls(card: LinearLayout, bydClusterFound: Boolean, current: android.view.Display?) {
+        val enabled = AirPlayPersistence.loadSecondDisplayEnabled(this)
+        toggle(card, getString(R.string.second_display_map), getString(R.string.second_display_map_description), enabled) {
+            AirPlayPersistence.saveSecondDisplayEnabled(this, it)
+            render()
+            reconnectForClusterMap()
+        }
+        if (!enabled) return
+        val candidates = SecondDisplay.candidates(this, SecondDisplay.displayIdOf(this))
+        val saved = AirPlayPersistence.loadSecondDisplayId(this)
+        val ids = mutableListOf(SecondDisplayPolicy.AUTO).apply { addAll(candidates.map { it.displayId }) }
+        val labels = mutableListOf(getString(R.string.second_display_auto)).apply { addAll(candidates.map(SecondDisplay::describe)) }
+        // Keep a saved display that is unplugged right now visible, so the choice is not silently lost.
+        if (saved != SecondDisplayPolicy.AUTO && saved !in ids) {
+            ids += saved
+            labels += getString(R.string.second_display_missing, saved)
+        }
+        choice(card, getString(R.string.second_display_target), labels, ids.indexOf(saved).coerceAtLeast(0)) { index ->
+            AirPlayPersistence.saveSecondDisplayId(this, ids[index])
+            render()
+        }
+        val status = when {
+            bydClusterFound -> getString(R.string.second_display_byd_wins)
+            current != null -> getString(R.string.second_display_current, "${current.displayId}: ${current.name}")
+            else -> getString(R.string.second_display_none)
+        }
+        card.addView(label(status, 14, if (current == null && !bydClusterFound) WARNING else MUTED))
+        card.addView(space(12))
+    }
+
     private fun reconnectForClusterMap() {
         if (CarPlayBackgroundSession.hasSession()) connect(AirPlayPersistence.loadWirelessEnabled(this))
     }
@@ -2953,6 +2987,7 @@ class DiPlayActivity : ComponentActivity() {
                     appendLine()
                     appendLine("--- Current cluster display diagnostics (even when disabled) ---")
                     appendLine(ClusterMapPresentation.diagnosticReport(appContext))
+                    appendLine(SecondDisplay.diagnosticReport(appContext))
                     appendLine()
                     appendLine("--- ADB cluster activity routing ---")
                     appendLine("adbClusterActivityEnabled=${AirPlayPersistence.loadAdbClusterEnabled(appContext)}")

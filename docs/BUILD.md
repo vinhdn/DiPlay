@@ -1,6 +1,6 @@
 # Building DiPlay
 
-Requirements: JDK 25, Android SDK 37, NDK 28.2.13676358 and the included Gradle wrapper.
+Requirements: JDK 25, Android SDK 37, NDK 29.0.14206865 and the included Gradle wrapper.
 
 ## Source and CI builds
 

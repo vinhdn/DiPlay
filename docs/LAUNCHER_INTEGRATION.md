@@ -65,7 +65,7 @@ DiPlay can hand the live map to your launcher as a [`SurfaceControlViewHost.Surf
 Requirements:
 
 - Android 11 (API 30) or newer on the head unit;
-- the driver turns on **Share the live map with other launchers** in DiPlay (off by default);
+- **Share the live map with other launchers** is on in DiPlay (on by default; the driver can turn it off);
 - CarPlay connected with **CarPlay map on instrument cluster** on, for the map itself.
 
 A complete working example is the sample app in [`samples/maphost`](../samples/maphost/src/main/java/com/diplay/maphost/MainActivity.kt).
@@ -144,9 +144,19 @@ The map is 8:3. If your view has another shape, DiPlay fills it and crops the ed
 ### Notes
 
 - Each attached view gets its own decoder in DiPlay. Attach one view, not one per page.
-- Once the driver turns sharing on, any app on the head unit could ask for the map. DiPlay logs which package asked (log tag `DiPlay-MapEmbed`).
+- While sharing is on (the default), any app on the head unit could ask for the map. DiPlay logs which package asked (log tag `DiPlay-MapEmbed`).
 - If DiPlay restarts, your `ServiceConnection` is disconnected and reconnected; attach again then.
 - The protocol is new. Handle `ERROR` and a missing or older DiPlay gracefully.
+
+## DiPlay Taplo (map app for the instrument cluster)
+
+[`samples/taplo`](../samples/taplo/src/main/java/com/diplay/taplo/TaploActivity.kt) is an ordinary activity that a launcher or cluster service embeds on the instrument cluster (taplo), for example in an `ActivityView` or with `am start --display <cluster>`. DiPlay decodes the dashboard map (stream 111) straight into its `TextureView`, so the embedding service only has to show the app.
+
+- **Link.** The app binds to `TaploLinkService` with action `com.shihab.diplay.action.TAPLO_LINK`, registers (`1`), sends its view's `Surface` with width/height (`3`) and `4` before the surface is destroyed. DiPlay replies with state (`10`: `enabled`, `streamActive`, `streamAspect`). Unlike the embed above, this works from Android 9.
+- **Signing.** The service needs the signature permission `<DiPlay package>.permission.TAPLO_LINK`. Build the app with the same key as DiPlay (`:taplo:assembleDebug` with the same debug key, or the release env variables).
+- **Consent.** The map is shared only while "Share the live map with other launchers" and "CarPlay map on instrument cluster" are on. Both are on by default, as is "Show the map on a second display"; turn them off in DiPlay when not wanted.
+- **Covered edges.** `3` may also carry `obscuredTopPercent`, `obscuredBottomPercent`, `obscuredLeftPercent` and `obscuredRightPercent` (0–45 each): the part of the view the taplo host covers. DiPlay declares the rest as the map's safe area, so the iPhone centres the car in the visible part and keeps guidance out of the covered part. The sample declares top 20 % and bottom 10 % (`OBSCURED_*_PERCENT` in `TaploActivity`).
+- **Size.** On head units without a BYD cluster display, the virtual map stream takes the shape the app last reported (at most 1920x1080) instead of 1280x720. A changed size applies at the next CarPlay connection. Log tag `DiPlay-Taplo`.
 
 ## DiPlay Home (sample launcher)
 

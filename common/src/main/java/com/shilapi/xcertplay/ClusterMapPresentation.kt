@@ -39,6 +39,8 @@ internal class ClusterMapPresentation(
     context: Context,
     display: Display,
     private val theme: DiLink51ClusterLayout.Theme = DiLink51ClusterLayout.theme(context),
+    /** An ordinary second display ([SecondDisplay]): the whole panel, never a BYD layer layout. */
+    val generic: Boolean = false,
     private val onSurface: (Surface?) -> Unit,
 ) : Presentation(context, display) {
     private var waitingLabel: TextView? = null
@@ -53,7 +55,7 @@ internal class ClusterMapPresentation(
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val size = sizeOf(display)
-        val adaptive = DiLink51ClusterLayout.supported()
+        val adaptive = !generic && DiLink51ClusterLayout.supported()
         val plan = if (adaptive) DiLink51ClusterLayout.plan(size.x, size.y, theme) else null
         val dark = DiLink51ClusterLayout.dark(context, theme)
         val backdrop = if (dark) Color.rgb(15, 22, 30) else Color.rgb(207, 218, 229)

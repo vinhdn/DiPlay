@@ -555,7 +555,15 @@
     <string name="center_map_usage_missing">Usage Access: not allowed, so the card shows over every app. Over ADB: adb shell appops set %1$s GET_USAGE_STATS allow</string>
     <string name="center_map_no_permission_screen">This head unit has no settings screen for this permission. Allow it over ADB.</string>
     <string name="launcher_map_sharing">Share the live map with other launchers</string>
-    <string name="launcher_map_sharing_description">Launchers that support DiPlay can show the live dashboard map inside their own home screen. Off by default, because any app on the head unit could then ask for the map. See docs/LAUNCHER_INTEGRATION.md.</string>
+    <string name="launcher_map_sharing_description">Launchers that support DiPlay can show the live dashboard map inside their own home screen. On by default. While it is on, any app on the head unit can ask for the map; turn it off if you do not use a launcher or the Taplo app. See docs/LAUNCHER_INTEGRATION.md.</string>
+    <string name="second_display_map">Show the map on a second display</string>
+    <string name="second_display_map_description">When no BYD instrument-cluster display is found, shows the CarPlay dashboard map full screen on another Android display (HDMI, USB-C, a passenger or cluster panel). Applying reconnects CarPlay.</string>
+    <string name="second_display_target">Second display</string>
+    <string name="second_display_auto">Automatic (first presentation display)</string>
+    <string name="second_display_missing">Display %1$d (not connected)</string>
+    <string name="second_display_current">Map goes to display %1$s.</string>
+    <string name="second_display_none">No second display is connected. The map uses the virtual stream until one appears.</string>
+    <string name="second_display_byd_wins">A BYD cluster display was found; it is used instead of the second display.</string>
     <string name="usb_auto_confirm_status_on">USB Dialog Auto-Confirm: Enabled</string>
     <string name="usb_auto_confirm_dialog_msg">Auto-confirm requires the Accessibility Service. Many car head units do not expose the system accessibility settings.\n\nThis setup also requests Usage Access and permission to draw over other apps for the home-screen map. Existing accessibility services are preserved.\n\nApply these three permissions via local ADB?</string>
     <string name="usb_auto_confirm_active_hint">✓ Accessibility Service is active (USB prompt will be auto-confirmed)</string>
