@@ -40,6 +40,8 @@ internal class ClusterMapPresentation(
     context: Context,
     display: Display,
     private val theme: DiLink51ClusterLayout.Theme = DiLink51ClusterLayout.theme(context),
+    /** An ordinary second display ([SecondDisplay]): the whole panel, never a BYD layer layout. */
+    val generic: Boolean = false,
     private val onSurface: (Surface?) -> Unit,
 ) : Presentation(context, display) {
     // The placeholder until the map arrives: a small spinner.
@@ -55,7 +57,7 @@ internal class ClusterMapPresentation(
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val size = sizeOf(display)
-        val adaptive = DiLink51ClusterLayout.supported()
+        val adaptive = !generic && DiLink51ClusterLayout.supported()
         val plan = if (adaptive) DiLink51ClusterLayout.plan(size.x, size.y, theme) else null
         // The adaptive DiLink 5.1 layout follows the cluster's own contrast; elsewhere the cluster follows DiPlay's theme.
         val dark = if (plan != null) DiLink51ClusterLayout.dark(context, theme) else context.resolveAppNightNow()

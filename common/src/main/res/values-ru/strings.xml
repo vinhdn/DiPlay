@@ -539,7 +539,15 @@
     <string name="center_map_usage_missing">Доступ к истории использования: не разрешён, поэтому карточка показывается поверх всех приложений. Через ADB: adb shell appops set %1$s GET_USAGE_STATS allow</string>
     <string name="center_map_no_permission_screen">На этом головном устройстве нет экрана настроек для этого разрешения. Разрешите его через ADB.</string>
     <string name="launcher_map_sharing">Делиться живой картой с другими лаунчерами</string>
-    <string name="launcher_map_sharing_description">Лаунчеры с поддержкой DiPlay смогут показывать живую карту приборной панели на своём главном экране. Выключено по умолчанию, потому что тогда карту сможет запросить любое приложение на головном устройстве. Подробнее: docs/LAUNCHER_INTEGRATION.md.</string>
+    <string name="launcher_map_sharing_description">Лаунчеры с поддержкой DiPlay смогут показывать живую карту приборной панели на своём главном экране. Включено по умолчанию. Пока функция включена, карту может запросить любое приложение на головном устройстве; выключите её, если не используете лаунчер или приложение Taplo. Подробнее: docs/LAUNCHER_INTEGRATION.md.</string>
+    <string name="second_display_map">Показывать карту на втором экране</string>
+    <string name="second_display_map_description">Если экран приборной панели BYD не найден, карта приборной панели CarPlay показывается на весь экран другого Android-дисплея (HDMI, USB-C, экран пассажира или приборов). Применение переподключает CarPlay.</string>
+    <string name="second_display_target">Второй экран</string>
+    <string name="second_display_auto">Автоматически (первый presentation-дисплей)</string>
+    <string name="second_display_missing">Дисплей %1$d (не подключён)</string>
+    <string name="second_display_current">Карта выводится на дисплей %1$s.</string>
+    <string name="second_display_none">Второй экран не подключён. Карта использует виртуальный поток, пока он не появится.</string>
+    <string name="second_display_byd_wins">Найден дисплей приборной панели BYD; он используется вместо второго экрана.</string>
     <string name="turn_card_overlay_size">Размер собственной карточки</string>
     <string name="turn_card_overlay_opacity">Прозрачность собственной карточки</string>
     <string name="turn_card_overlay_opacity_option">%1$d %%</string>

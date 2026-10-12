@@ -541,7 +541,15 @@
     <string name="cluster_song">Пісня на панелі приладів</string>
     <string name="cluster_song_description">Назва й виконавець пісні з CarPlay показуються в музичній картці на панелі приладів, разом із відтворенням і паузою. Картка показується як джерело BYD «Інше», бо панель приладів не малює власне джерело CarPlay. Застосовується одразу. Потрібен ADB через мережу на головному пристрої.</string>
     <string name="launcher_map_sharing">Ділитися живою картою з іншими лаунчерами</string>
-    <string name="launcher_map_sharing_description">Лаунчери з підтримкою DiPlay можуть показувати живу карту панелі приладів на своєму головному екрані. Типово вимкнено, бо тоді карту зможе запитати будь-який застосунок на головному пристрої. Див. docs/LAUNCHER_INTEGRATION.md.</string>
+    <string name="launcher_map_sharing_description">Лаунчери з підтримкою DiPlay можуть показувати живу карту панелі приладів на своєму головному екрані. Типово увімкнено. Поки функцію увімкнено, карту може запитати будь-який застосунок на головному пристрої; вимкніть її, якщо не використовуєте лаунчер або застосунок Taplo. Див. docs/LAUNCHER_INTEGRATION.md.</string>
+    <string name="second_display_map">Показувати карту на другому екрані</string>
+    <string name="second_display_map_description">Якщо екран приладової панелі BYD не знайдено, карта приладової панелі CarPlay показується на весь екран іншого Android-дисплея (HDMI, USB-C, екран пасажира чи приладів). Застосування перепідключає CarPlay.</string>
+    <string name="second_display_target">Другий екран</string>
+    <string name="second_display_auto">Автоматично (перший presentation-дисплей)</string>
+    <string name="second_display_missing">Дисплей %1$d (не підключено)</string>
+    <string name="second_display_current">Карта виводиться на дисплей %1$s.</string>
+    <string name="second_display_none">Другий екран не підключено. Карта використовує віртуальний потік, доки він не з’явиться.</string>
+    <string name="second_display_byd_wins">Знайдено дисплей приладової панелі BYD; він використовується замість другого екрана.</string>
     <string name="location_reporting_reconnects">Зміна цього налаштування перепідключає активний сеанс CarPlay.</string>
     <string name="navigation_widget_description">Наступний поворот, відстань, прибуття й пісня з CarPlay</string>
     <string name="navigation_widget_label">Навігація CarPlay</string>

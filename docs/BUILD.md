@@ -31,7 +31,7 @@ Install these tools:
 - Android SDK Platform 37 (`platforms;android-37.0`).
 - Android SDK Build-Tools 36.0.0.
 - Android SDK Platform-Tools.
-- Android NDK 28.2.13676358.
+- Android NDK 29.0.14206865.
 
 Use the Gradle wrapper included in this repository.
 The first build needs an internet connection to download dependencies.

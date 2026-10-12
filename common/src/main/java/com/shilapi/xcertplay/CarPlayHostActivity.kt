@@ -414,6 +414,7 @@ class CarPlayHostActivity : ComponentActivity() {
     private val mirrorSink: (String, Surface?) -> Unit = { key, surface -> sink?.setMirrorSurface(SCREEN_TYPE_ALT, key, surface) }
     private val mirrorsChanged: () -> Unit = {
         updateClusterMapShown()
+        mainHandler.post { reconnectForTaploSize() }
         if (MapMirrors.launcherShowsMap) CenterMapOverlay.hide()
     }
     // With Usage Access the card shows only over a home screen; null = not known (no monitor).
@@ -1184,16 +1185,30 @@ class CarPlayHostActivity : ComponentActivity() {
         clusterLaunchGate.reset()
         ClusterActivityOutput.stop(this)
         val theme = effectiveClusterTheme()
-        if (DiLink51ClusterLayout.supported()) {
+        val bydDisplay = ClusterMapPresentation.findDisplay(this, theme)
+        // An ordinary second display only stands in when no measured BYD cluster display exists.
+        val secondDisplay = if (bydDisplay == null) SecondDisplay.choose(this, SecondDisplay.displayIdOf(this)) else null
+        if (secondDisplay == null && DiLink51ClusterLayout.supported()) {
             ensureDiLink51ClusterPresentation(theme)
             return
         }
+        // A second-display map follows the settings: moved, or gone when the option is off.
+        clusterPresentation?.takeIf { it.generic && it.display.displayId != (bydDisplay ?: secondDisplay)?.displayId }?.let {
+            appendLog("Second display: map leaves ${it.display.displayId}")
+            dismissClusterPresentation()
+        }
         if (clusterPresentation != null) return
-        val display = ClusterMapPresentation.findDisplay(this, theme) ?: run {
+        val display = bydDisplay ?: secondDisplay ?: run {
             appendLog("Cluster map: no cluster projection display among ${ClusterMapPresentation.describeDisplays(this)}")
             return
         }
-        val presentation = ClusterMapPresentation(this, display, theme) { surface -> runOnUiThread { onClusterSurface(surface) } }
+        if (secondDisplay != null) {
+            appendLog("Second display: map on ${secondDisplay.displayId}:${secondDisplay.name}")
+            Log.i(ClusterMapPresentation.TAG, "second display presentation on ${secondDisplay.displayId}:${secondDisplay.name}")
+        }
+        val presentation = ClusterMapPresentation(this, display, theme, generic = secondDisplay != null) { surface ->
+            runOnUiThread { onClusterSurface(surface) }
+        }
         // The system dismisses a presentation when its display goes away; allow a new one on resume.
         presentation.setOnDismissListener {
             if (clusterPresentation === presentation) {
@@ -1364,6 +1379,7 @@ class CarPlayHostActivity : ComponentActivity() {
         override fun onDisplayAdded(displayId: Int) {
             if (isDestroyed || !AirPlayPersistence.loadClusterMapEnabled(this@CarPlayHostActivity)) return
             val display = ClusterMapPresentation.findDisplay(this@CarPlayHostActivity, effectiveClusterTheme())
+                ?: SecondDisplay.choose(this@CarPlayHostActivity, SecondDisplay.displayIdOf(this@CarPlayHostActivity))
             if (display?.displayId != displayId) return
             appendLog("Cluster map: display ${display.name} appeared")
             ensureClusterPresentation()
@@ -1375,7 +1391,40 @@ class CarPlayHostActivity : ComponentActivity() {
         override fun onDisplayChanged(displayId: Int) = Unit
     }
 
+    // The virtual stream size this session asked for; null when a physical or second display sets the shape.
+    private var virtualStreamSize: Pair<Int, Int>? = null
+    // The covered edges (percent) this session's taplo stream was declared with.
+    private var virtualStreamObscured: com.shilapi.xcertplay.airplay.AirPlayInsets? = null
+    private var taploReconnectRequestedObscured: com.shilapi.xcertplay.airplay.AirPlayInsets? = null
+    // The second display this session's stream was sized for, if any.
+    private var secondDisplayStreamId: Int? = null
+    private var taploReconnectRequestedFor: Pair<Int, Int>? = null
+
+    /**
+     * The taplo app reported a view the running virtual stream does not match (it is 960x720, the
+     * stream 1280x720): ask once for a stream of its shape, so nothing it needs is cut off. A BYD
+     * cluster or a second display keeps its own shape; the taplo app then letterboxes.
+     */
+    private fun reconnectForTaploSize() {
+        if (isDestroyed || controller == null || !MapMirrors.has(MapMirrors.TAPLO)) return
+        // A stream sized for a second display that is now off or unplugged is free to follow the taplo app.
+        val current = virtualStreamSize ?: secondDisplayStreamId?.takeIf {
+            SecondDisplay.choose(this, SecondDisplay.displayIdOf(this))?.displayId != it
+        }?.let { -1 to -1 } ?: return
+        if (!AirPlayPersistence.loadLauncherMapSharing(this)) return
+        val wanted = AirPlayPersistence.loadTaploAppSize(this)?.let { TaploLinkService.streamSize(it.first, it.second) } ?: return
+        val obscured = AirPlayPersistence.loadTaploAppObscured(this)
+        if (wanted == current && obscured == virtualStreamObscured) return
+        if (wanted == taploReconnectRequestedFor && obscured == taploReconnectRequestedObscured) return
+        taploReconnectRequestedFor = wanted
+        taploReconnectRequestedObscured = obscured
+        reconnectAfterLoss("Taplo app is ${wanted.first}x${wanted.second} covering $obscured; requesting a matching map stream")
+    }
+
     private fun clusterDisplayConfig(): AirPlayDisplayConfig? {
+        virtualStreamSize = null
+        virtualStreamObscured = null
+        secondDisplayStreamId = null
         adbClusterConfigured = false
         clusterStreamOnDisplay = false
         requestedSmallWindowForStream = null
@@ -1392,19 +1441,25 @@ class CarPlayHostActivity : ComponentActivity() {
             }
         }
         val theme = effectiveClusterTheme()
-        val display = ClusterMapPresentation.findDisplay(this, theme)
+        val bydDisplay = ClusterMapPresentation.findDisplay(this, theme)
+        val secondDisplay = if (bydDisplay == null) SecondDisplay.choose(this, SecondDisplay.displayIdOf(this)) else null
+        val display = bydDisplay ?: secondDisplay
         if (display != null) {
-            val size = ClusterMapPresentation.sizeOf(display)
+            val panel = ClusterMapPresentation.sizeOf(display)
+            // A second display can be any monitor: keep its shape, but never ask for more than 1080p.
+            val size = if (secondDisplay == null) panel else SecondDisplayPolicy.streamSize(panel.x, panel.y)
+                ?.let { android.graphics.Point(it.first, it.second) } ?: android.graphics.Point(0, 0)
             if (size.x > 0 && size.y > 0) {
                 clusterStreamOnDisplay = true
-                if (DiLink51ClusterLayout.supported()) {
+                secondDisplayStreamId = secondDisplay?.displayId
+                if (secondDisplay == null && DiLink51ClusterLayout.supported()) {
                     val plan = DiLink51ClusterLayout.plan(size.x, size.y, theme) ?: return null
                     return DiLink51ClusterLayout.streamConfig().also {
                         MapMirrors.streamAspect = it.widthPixels.toDouble() / it.heightPixels
                         appendLog("Cluster map: fixed 1920x720 stream; layout=$theme viewport=$plan")
                     }
                 }
-                if (DiLink4ClusterDisplay.matches(display.name, size.x, size.y)) {
+                if (secondDisplay == null && DiLink4ClusterDisplay.matches(display.name, size.x, size.y)) {
                     return DiLink4ClusterDisplay.streamConfig(
                         AirPlayPersistence.loadClusterContent(this),
                         safeAreaRect = AirPlayPersistence.loadClusterSafeAreaRect(this),
@@ -1426,6 +1481,9 @@ class CarPlayHostActivity : ComponentActivity() {
                     else AirPlayPersistence.loadClusterMarkerXPercent(this),
                     markerYPercent = if (smallWindow) AirPlayPersistence.loadClusterSmallWindowMarkerYPercent(this)
                     else AirPlayPersistence.loadClusterMarkerYPercent(this),
+                    // BYD's measured margins only fit BYD clusters; other panels keep the car near the middle.
+                    baseSafeArea = if (secondDisplay != null) CarPlayClusterDisplay.VIRTUAL_SAFE_AREA_PERCENT
+                        else CarPlayClusterDisplay.SAFE_AREA_PERCENT,
                 )
                 val requested = streamAt(requestedScale)
                 // The smaller-map preset enlarges the encoded canvas beyond this panel. Probe
@@ -1444,12 +1502,35 @@ class CarPlayHostActivity : ComponentActivity() {
                 } else requested
                 return effective.also {
                     MapMirrors.streamAspect = it.widthPixels.toDouble() / it.heightPixels
-                    appendLog("Cluster map: requesting ${it.widthPixels}x${it.heightPixels} on ${size.x}x${size.y} safeArea=${it.safeArea} url=${it.initialUrl}")
+                    appendLog("Cluster map: requesting ${it.widthPixels}x${it.heightPixels} on ${panel.x}x${panel.y}" +
+                        (if (secondDisplay != null) " second display ${secondDisplay.displayId}:${secondDisplay.name}" else "") +
+                        " safeArea=${it.safeArea} url=${it.initialUrl}")
                 }
             }
         }
         // Fallback for head units without physical cluster projection (e.g. DiLink 3.0/3.5 without digital cluster):
         // Provide standard virtual cluster stream (1280x720, 16:9 aspect) for CenterMapOverlay and MapEmbedService.
+        // When the taplo companion app has reported its cluster view, the stream takes that shape instead.
+        val taplo = if (AirPlayPersistence.loadLauncherMapSharing(this))
+            AirPlayPersistence.loadTaploAppSize(this)?.let { TaploLinkService.streamSize(it.first, it.second) } else null
+        if (taplo != null) {
+            // The edges the taplo host app covers stay out of the safe area, so the car marker sits in
+            // the middle of what is visible and the guidance is not drawn under the covered part.
+            val obscured = AirPlayPersistence.loadTaploAppObscured(this)
+            return CarPlayClusterDisplay.config(
+                widthPixels = taplo.first,
+                heightPixels = taplo.second,
+                scalePercent = 100,
+                content = AirPlayPersistence.loadClusterContent(this),
+                baseSafeArea = obscured ?: CarPlayClusterDisplay.VIRTUAL_SAFE_AREA_PERCENT,
+            ).also {
+                MapMirrors.streamAspect = it.widthPixels.toDouble() / it.heightPixels
+                virtualStreamSize = taplo
+                virtualStreamObscured = obscured
+                appendLog("Cluster map: requesting virtual ${it.widthPixels}x${it.heightPixels} stream for the taplo app; " +
+                    "covered=$obscured safeArea=${it.safeArea}")
+            }
+        }
         MapMirrors.streamAspect = MapMirrors.VIRTUAL_STREAM_ASPECT
         return CarPlayClusterDisplay.config(
             widthPixels = 1280,
@@ -1458,6 +1539,7 @@ class CarPlayHostActivity : ComponentActivity() {
             content = AirPlayPersistence.loadClusterContent(this),
             baseSafeArea = CarPlayClusterDisplay.VIRTUAL_SAFE_AREA_PERCENT,
         ).also {
+            virtualStreamSize = 1280 to 720
             appendLog("Cluster map: requesting virtual ${it.widthPixels}x${it.heightPixels} (16:9) stream for launcher/center card")
         }
     }

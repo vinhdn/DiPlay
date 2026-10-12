@@ -10,10 +10,14 @@ internal object AdbClusterRouter {
     private const val REPORT = "adb-cluster-route.txt"
     data class Result(val success: Boolean, val report: String)
 
-    /** Known 5/5.1 displays win; the explicit legacy route may own the measured projection task. */
+    /**
+     * Known 5/5.1 displays win; the explicit legacy route may own the measured projection task.
+     * A second display the driver turned on and that is attached wins over the ADB route too.
+     */
     fun enabled(context: Context): Boolean {
         if (DiLink51ClusterLayout.supported()) return false
         val public = ClusterMapPresentation.findDisplay(context)
+        if (public == null && SecondDisplay.choose(context) != null) return false
         if (AirPlayPersistence.loadLegacyClusterEnabled(context)) {
             // Only the measured projection may use the independent task; public 5/5.1 wins.
             return public == null || DiLink4ClusterDisplay.matches(public.name,
