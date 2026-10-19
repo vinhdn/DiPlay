@@ -1,12 +1,13 @@
 # CarPlay on your launcher's home screen
 
-DiPlay can put CarPlay information on a launcher's home screen in three ways:
+DiPlay can put CarPlay information on a launcher's home screen in four ways:
 
 | | What it shows | Works with | Needs |
 |---|---|---|---|
 | [Navigation widget](#1-navigation-widget) | Next turn arrow, distance, road, arrival, song | Any launcher that hosts standard Android widgets | Nothing extra |
 | [Map card](#2-map-card) | The live CarPlay map, as a card on the home screen | Any launcher, including BYD home and map home | Two permissions (see below) |
 | [Embedded map](#3-embedded-live-map-for-launcher-developers) | The live CarPlay map inside the launcher's own layout | Launchers that add support for it | Launcher code, Android 11+ |
+| [Home-screen bubble](#4-home-screen-bubble) | The DiPlay icon as a shortcut back to CarPlay | Any launcher, including ones that list only their own cards | Display over other apps |
 
 The live map is CarPlay's instrument-cluster map: the map the iPhone draws for the dashboard. The map card and the embedded map need **CarPlay map on instrument cluster** turned on in DiPlay. Without it, the iPhone does not send that map.
 
@@ -157,6 +158,32 @@ The map is 8:3. If your view has another shape, DiPlay fills it and crops the ed
 - **Consent.** The map is shared only while "Share the live map with other launchers" and "CarPlay map on instrument cluster" are on. Both are on by default, as is "Show the map on a second display"; turn them off in DiPlay when not wanted.
 - **Covered edges.** `3` may also carry `obscuredTopPercent`, `obscuredBottomPercent`, `obscuredLeftPercent` and `obscuredRightPercent` (0–45 each): the part of the view the taplo host covers. DiPlay declares the rest as the map's safe area, so the iPhone centres the car in the visible part and keeps guidance out of the covered part. The sample declares top 20 % and bottom 10 % (`OBSCURED_*_PERCENT` in `TaploActivity`).
 - **Size.** On head units without a BYD cluster display, the virtual map stream takes the shape the app last reported (at most 1920x1080) instead of 1280x720. A changed size applies at the next CarPlay connection. Log tag `DiPlay-Taplo`.
+=======
+## 4. Home-screen bubble
+
+A shortcut the app draws itself over the launcher's home screen: tap it to come back to CarPlay,
+drag it anywhere. It is an overlay window, not a widget and not a launcher entry, so it also works
+on a head unit whose launcher lists only its own cards and would never show a normally installed app
+(#650).
+
+Turn it on under **Advanced → Home-screen bubble (experimental)** and allow **Display over other
+apps**. The settings card says whether that permission is granted, and it can be given over ADB:
+
+```bash
+adb shell appops set com.shihab.diplay SYSTEM_ALERT_WINDOW allow
+```
+
+Behaviour:
+
+- it draws the app's own icon, the same tile the launcher's app list shows;
+- its height defaults to 10% of the screen height and the width follows the icon; **Bubble size** in
+  the same card changes it (8 / 10 / 12 / 16%);
+- it hides as soon as any DiPlay screen is in front, so it never covers CarPlay or the settings, and
+  it comes back about half a second after you leave DiPlay;
+- a drag moves it and the place is remembered;
+- hold it to lock the place (a light sweeps across the icon while you hold) and hold it again to
+  unlock, so it cannot be moved by accident;
+- tapping it opens CarPlay when a session is up, and DiPlay's settings when it is not.
 
 ## DiPlay Home (sample launcher)
 
@@ -198,3 +225,4 @@ It runs without system privileges. BYD's home stays installed, and the **BYD hom
 | Embedded map says `disabled` | Turn on "Share the live map with other launchers" in DiPlay. |
 | Embedded map stays on "waiting" | CarPlay is not connected, or "CarPlay map on instrument cluster" is off. |
 | Widget says "CarPlay is not connected" while CarPlay works | Open DiPlay once after installing it; the widget follows the running session. |
+| Bubble is missing | "Home-screen bubble" is on, "Draw over other apps" is allowed, and no DiPlay screen is in front. |
