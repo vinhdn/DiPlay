@@ -39,3 +39,6 @@ release-signing.properties
 *.key
 *.apk
 *.aab
+
+# Head unit ROM platform key for the system build
+platform.properties

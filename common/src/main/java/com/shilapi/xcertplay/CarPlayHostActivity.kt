@@ -996,7 +996,7 @@ class CarPlayHostActivity : ComponentActivity() {
             onVpnConsentUnavailable("prepare", null, error)
             return
         }
-        if (consent == null) {
+        if (consent == null || preConsentVpnItself()) {
             vpnReady = true
             maybeStartCarPlay()
             return
@@ -1034,6 +1034,14 @@ class CarPlayHostActivity : ComponentActivity() {
         appendLog(diagnostic)
         setStatus(R.string.vpn_authorization_unavailable)
         if (!vpnAdbConsentTried) preConsentVpnOverAdb()
+    }
+
+    /** A platform-signed build holds CONTROL_VPN and needs no consent dialog. */
+    private fun preConsentVpnItself(): Boolean {
+        if (!VpnPreConsent.grantSelf(this)) return false
+        val granted = runCatching { CarPlayVpnService.prepare(this) == null }.getOrDefault(false)
+        appendLog("VPN consent by DiPlay itself (CONTROL_VPN) granted=$granted")
+        return granted
     }
 
     /** Without a consent dialog, the car's approved adb can allow the VPN instead (#604). */

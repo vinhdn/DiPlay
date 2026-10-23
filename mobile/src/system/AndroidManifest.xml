@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The system build: signed with the head unit ROM's platform key, DiPlay holds MANAGE_USB and
+     CONTROL_VPN and grants iPhone USB access and VPN consent to itself, so a ROM without those
+     dialogs needs no prompt (UsbSelfGrant, VpnPreConsent). It keeps its own user id; only a ROM
+     whose platform key signed it grants the permissions (platform.properties). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.MANAGE_USB" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.CONTROL_VPN" tools:ignore="ProtectedPermissions" />
+</manifest>

@@ -117,6 +117,18 @@ class UsbPermissionActivityProbeTest {
         assertTrue(diagnostics.isEmpty())
     }
 
+    @Test fun manageUsbGrantsWithoutAPromptOrAdb() {
+        shadowOf(context).grantPermissions(UsbSelfGrant.MANAGE_USB)
+        val usb = context.getSystemService(UsbManager::class.java)
+        val device = device("platform-signed")
+        shadowOf(usb).addOrUpdateUsbDevice(device, false)
+        val host = IphoneUsbHost(context, usb, IphoneUsbMatcher.appleVendor())
+
+        assertTrue(host.requestPermission(device) is IphoneUsbHost.PermissionRequest.AlreadyGranted)
+        assertTrue(usb.hasPermission(device))
+        assertEquals(0, PermissionRequestUsbManagerShadow.requests)
+    }
+
     private fun device(name: String): UsbDevice = ReflectionHelpers.newInstance(UsbDevice::class.java).apply {
         ReflectionHelpers.setField(this, "mName", name)
         ReflectionHelpers.setField(this, "mVendorId", IphoneUsbMatcher.APPLE_VENDOR_ID)

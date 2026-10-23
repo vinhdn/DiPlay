@@ -1,7 +1,14 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
+
+// The system build holds MANAGE_USB and CONTROL_VPN, so it must carry the head unit ROM's platform key.
+// platform.properties (git-ignored) names it: storeFile, storePassword, keyAlias, keyPassword.
+val platformSigning: Properties? = rootProject.file("platform.properties").takeIf { it.isFile }
+    ?.let { file -> Properties().apply { file.inputStream().use { load(it) } } }
 
 // Optional local-only input. CI and ordinary source builds contain no accessory identity.
 val localAuthenticationAssets = providers.environmentVariable("DIPLAY_AUTH_ASSETS_DIR")
@@ -35,6 +42,12 @@ android {
             keyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS").getOrElse("")
             keyPassword = providers.environmentVariable("ANDROID_KEY_PASSWORD").getOrElse("")
         }
+        if (platformSigning != null) create("platform") {
+            storeFile = rootProject.file(platformSigning.getProperty("storeFile"))
+            storePassword = platformSigning.getProperty("storePassword")
+            keyAlias = platformSigning.getProperty("keyAlias")
+            keyPassword = platformSigning.getProperty("keyPassword")
+        }
     }
 
     buildTypes {
@@ -47,6 +60,13 @@ android {
                 enable = false
             }
             signingConfig = signingConfigs.getByName("release")
+        }
+        // The release build for head units whose ROM has no USB or VPN permission dialog: platform-signed,
+        // it holds MANAGE_USB and CONTROL_VPN (src/system) and grants both to itself without asking.
+        create("system") {
+            initWith(getByName("release"))
+            matchingFallbacks += "release"
+            signingConfig = platformSigning?.let { signingConfigs.getByName("platform") }
         }
     }
     compileOptions {

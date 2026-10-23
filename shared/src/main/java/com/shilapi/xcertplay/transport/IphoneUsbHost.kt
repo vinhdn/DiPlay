@@ -112,6 +112,10 @@ class IphoneUsbHost(
     fun requestPermission(device: UsbDevice, allowAdbFallback: Boolean = true): PermissionRequest {
         requireConfiguredDevice(device)
         if (usbManager.hasPermission(device)) return PermissionRequest.AlreadyGranted(device)
+        if (UsbSelfGrant.grant(appContext, usbManager, device)) {
+            runCatching { onDiagnostic("USB permission granted by DiPlay itself (MANAGE_USB)") }
+            return PermissionRequest.AlreadyGranted(device)
+        }
 
         val ui = UsbPermissionActivityProbe.inspect(appContext)
         if (ui.state != UsbPermissionActivityProbe.State.UNKNOWN) {
