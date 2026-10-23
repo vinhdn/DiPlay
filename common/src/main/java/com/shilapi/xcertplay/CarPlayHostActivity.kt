@@ -5580,7 +5580,18 @@ class CarPlayHostActivity : ComponentActivity() {
         // Settings → Connection can change the target while this screen stays open (#696).
         mfiTarget = AirPlayPersistence.loadMfiTarget(this)
         runCatching { DiPlayBootstrap.ensure(this, mfiTarget) }
-        val config = createRuntimeConfig()
+        // Unfinished connection settings, such as a car hotspot saved without a name, stop the start,
+        // not the app.
+        val config = try {
+            createRuntimeConfig()
+        } catch (error: IllegalArgumentException) {
+            appendLog("CarPlay settings incomplete: ${error.message}")
+            setStatus(
+                if (wirelessEnabled && wirelessHotspotMode == WirelessHotspotMode.MANUAL) R.string.hotspot_hint_local
+                else R.string.could_not_start_carplay_return_to_diplay_and_check_app_per,
+            )
+            return
+        }
         val effectiveSize = if (isMultiWindowActive() && !AirPlayPersistence.loadAdaptPipResolution(this) &&
             maximumDetectedWidthPixels >= size.width && maximumDetectedHeightPixels >= size.height &&
             (maximumDetectedWidthPixels > size.width || maximumDetectedHeightPixels > size.height)) {
@@ -6644,6 +6655,7 @@ class CarPlayHostActivity : ComponentActivity() {
         message == getString(R.string.vpn_authorization_unavailable) -> message
         // It says where to look itself; its word "permissions" would turn it into the generic permission line.
         message == getString(R.string.could_not_start_carplay_return_to_diplay_and_check_app_per) -> message
+        message == getString(R.string.hotspot_hint_local) -> message
         message == getString(R.string.waiting_for_mfi_coprocessor) ||
             message == getString(R.string.requesting_mfi_usb_permission) -> message
         // A startup failure that names its cause, and a line saying the retries stopped, are shown as they are.
